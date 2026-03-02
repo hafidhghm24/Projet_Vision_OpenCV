@@ -35,7 +35,7 @@ color = numpy.random.randint(0, 255, (100, 3))
 ret, image = cap.read()
 image_precedente = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-
+#trouver le premier pixel a suivre
 p0 = cv2.goodFeaturesToTrack(image_precedente, mask=None, **feature_params)
 
 #on creer un mask (image noir)
@@ -63,13 +63,18 @@ while (1):
 
     # Calcul Lucas-Kanade
     p1, st, err = cv2.calcOpticalFlowPyrLK(image_precedente, frame_gray, p0, None, **lk_params)
+    #p1: nouvelle position 
+    #si st[i] =1 alors point trouver ,sinon sist[i] = 0 alors point non trouver
+    #err: erreur de corespondance 
+
 
     if p1 is not None:
+
         good_new = p1[st == 1]
         good_old = p0[st == 1]
 
         for i, (new, old) in enumerate(zip(good_new, good_old)):
-            a, b = new.ravel()
+            a, b = new.ravel() 
             c, d = old.ravel()
             mask  = cv2.line(mask,    (int(a), int(b)), (int(c), int(d)), color[i].tolist(), 2)
             frame = cv2.circle(frame, (int(a), int(b)), 5, color[i].tolist(), -1)
