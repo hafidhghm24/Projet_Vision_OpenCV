@@ -1,21 +1,18 @@
 import cv2
 import numpy
 
-# ============================================================
-# PARAMÈTRES — mets le chemin de TA vidéo ici
-# Exemple: '../../data/mavideo.mp4'
-# ============================================================
-fichier = '../../data/VIRAT.mp4'   # ← remplace par ton vrai fichier
+#adapter le chemin a chaque video
+#fichier = 'data/VIRAT01.mp4'
+fichier = 'data/VIRAT03.mp4'  
 cap     = cv2.VideoCapture(fichier)
 
+#tester si la video existe
 if not cap.isOpened():
-    print(f"ERREUR : impossible d'ouvrir {fichier}")
-    print("Vérifie que le fichier vidéo existe dans data/")
+    print(f"Probléme de lecture (flowOptiqueEparseVideo){fichier}")
     exit()
 
-# ============================================================
-# PARAMÈTRES DU DÉTECTEUR SHI-TOMASI (du PDF du prof)
-# ============================================================
+
+# PARAMÈTRES DE SHI-TOMASI 
 feature_params = dict(
     maxCorners   = 100,
     qualityLevel = 0.3,
@@ -23,9 +20,8 @@ feature_params = dict(
     blockSize    = 7
 )
 
-# ============================================================
-# PARAMÈTRES LUCAS-KANADE (du PDF du prof)
-# ============================================================
+
+# PARAMÈTRES DE LUCAS-KANADE
 lk_params = dict(
     winSize  = (15, 15),
     maxLevel = 2,
@@ -34,25 +30,26 @@ lk_params = dict(
 
 color = numpy.random.randint(0, 255, (100, 3))
 
-# ============================================================
-# INITIALISATION — première frame
-# ============================================================
-ret, old_frame = cap.read()
-old_gray       = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
-p0             = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
-mask           = numpy.zeros_like(old_frame)
 
-# ============================================================
-# BOUCLE PRINCIPALE
-# ============================================================
-while True:
+# INITIALISATION
+ret, image = cap.read()
+image_precedente = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+
+p0 = cv2.goodFeaturesToTrack(image_precedente, mask=None, **feature_params)
+
+#on creer un mask (image noir)
+mask = numpy.zeros_like(image)
+
+
+while (1):
     ret, frame = cap.read()
 
     if not ret:
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ret, frame = cap.read()
-        old_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        p0       = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
+        image_precedente = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        p0       = cv2.goodFeaturesToTrack(image_precedente, mask=None, **feature_params)
         mask     = numpy.zeros_like(frame)
         continue
 
@@ -61,9 +58,11 @@ while True:
     height = int(frame.shape[0] * scale_percent / 100)
     frame  = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
+
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+    # Calcul Lucas-Kanade
+    p1, st, err = cv2.calcOpticalFlowPyrLK(image_precedente, frame_gray, p0, None, **lk_params)
 
     if p1 is not None:
         good_new = p1[st == 1]
@@ -78,7 +77,7 @@ while True:
         img = cv2.add(frame, mask)
         cv2.imshow('frame', img)
 
-        old_gray = frame_gray.copy()
+        image_precedente = frame_gray.copy()
         p0       = good_new.reshape(-1, 1, 2)
 
     k = cv2.waitKey(30) & 0xff

@@ -1,38 +1,37 @@
 import cv2
 import numpy
 
-# ============================================================
-# PARAMÈTRES — on utilise PTZ001 cette fois
-# data/PTZ001/in000001.jpg  →  imin=1, imax=100
-# ============================================================
-imin    = 1
-imax    = 100
+#On travaille en niveaux de gris car le flôt optique se base sur les variations de luminance
+# La pyramide sert à capturer les mouvement trop rapide pour que ça rentre dans la fenetre 
+
+#adapter le chemin a chaque image
+imin= 1
+imax= 100
 chemin  = 'data/PTZ001'
 fformat = '{}/in{:06d}.jpg'
 
-# ============================================================
-# INITIALISATION — première image
-# ============================================================
-name      = fformat.format(chemin, imin)
-old_frame = cv2.imread(name)
+# INITIALISATION
+name = fformat.format(chemin, imin)
+image = cv2.imread(name)
 
-if old_frame is None:
-    print(f"ERREUR : impossible de lire {name}")
+# Vérification que l'image existe
+if image is None:
+    print(f"Probléme de lécture (flowOptiqueDanseImage){name}")
     exit()
 
-prvs = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+#convertire "image" en niveau de gris
+image_precedente = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# Image HSV pour la visualisation colorée
-hsv         = numpy.zeros_like(old_frame)
-hsv[..., 1] = 255    # saturation max = couleurs toujours vives
+# image en HSV pour voir les couleurs
+hsv = numpy.zeros_like(image) #on crée une image vide
+hsv[..., 1] = 255 # saturation max 255 pour bien voir les couleurs de mouvement
 
-# ============================================================
-# BOUCLE PRINCIPALE
-# ============================================================
+
+
 current = imin + 1
 
-while True:
-    name  = fformat.format(chemin, current)
+while (1):
+    name = fformat.format(chemin, current)
     frame = cv2.imread(name)
 
     if frame is None:
@@ -43,28 +42,27 @@ while True:
     height = int(frame.shape[0] * scale_percent / 100)
     frame  = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
-    next_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    image_suivante = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # --------------------------------------------------------
-    # FLÔT DENSE — Farnebäck (du PDF du prof)
-    # --------------------------------------------------------
-    flow = cv2.calcOpticalFlowFarneback(prvs, next_gray, None,
-                                        0.5, 3, 15, 3, 5, 1.2, 0)
+    # Methode de Farneback
+    flow = cv2.calcOpticalFlowFarneback(image_precedente, image_suivante, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-    # --------------------------------------------------------
-    # VISUALISATION HSV (du PDF du prof)
-    # direction → couleur  |  vitesse → luminosité
-    # --------------------------------------------------------
-    mag, ang    = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    # Visualisation du HSV en couleur
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1]) #On transforme les coordonnées cartésiennes en polaires (pour avoir la vitesse et direction)
+    
     hsv[..., 0] = ang * 180 / numpy.pi / 2
     hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-    bgr         = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    
+    #on repasse en couleur BGR pour visualisation
+    imageBGR = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
-    cv2.imshow('frame',  frame)   # image originale
-    cv2.imshow('frame2', bgr)     # flôt dense coloré
+    cv2.imshow('frame',  frame)   # affichage de l'image originale
+    cv2.imshow('frame2', imageBGR)     # affichage du flôt dense coloré
 
+
+    #lecture du clavier 100s pour sortir de la fenetre
     k = cv2.waitKey(100) & 0xff
-    if k == 27:
+    if k == 27: #27 represente la touche "echap" 
         break
 
     if current == imax:
@@ -72,6 +70,6 @@ while True:
     else:
         current += 1
 
-    prvs = next_gray
+    image_precedente = image_suivante
 
 cv2.destroyAllWindows()

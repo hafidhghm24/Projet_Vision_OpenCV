@@ -1,18 +1,14 @@
 import cv2
 import numpy
 
-# ============================================================
-# PARAMÈTRES — adaptés à TES vraies données
-# data/marple17/marple17_001.jpg  →  imin=1, imax=234
-# ============================================================
+#adapter le chemin a chaque image
 imin    = 1
 imax    = 234
 chemin  = 'data/marple17'
-fformat = '{}/marple17_{:03d}.jpg'
+fformat = '{}/marple17_{:03d}.jpg' #remplacer les {} par les le chemin et le {} par le numero de limage
 
-# ============================================================
-# PARAMÈTRES DU DÉTECTEUR SHI-TOMASI (du PDF du prof)
-# ============================================================
+
+# PARAMÈTRES DE SHI-TOMASI
 feature_params = dict(
     maxCorners   = 100,
     qualityLevel = 0.3,
@@ -20,9 +16,8 @@ feature_params = dict(
     blockSize    = 7
 )
 
-# ============================================================
-# PARAMÈTRES LUCAS-KANADE (du PDF du prof)
-# ============================================================
+
+# PARAMÈTRES DE LUCAS-KANADE
 lk_params = dict(
     winSize  = (15, 15),
     maxLevel = 2,
@@ -32,28 +27,27 @@ lk_params = dict(
 # Couleurs aléatoires pour les trajectoires
 color = numpy.random.randint(0, 255, (100, 3))
 
-# ============================================================
-# INITIALISATION — première image
-# ============================================================
-name      = fformat.format(chemin, imin)
-old_frame = cv2.imread(name)
 
-# Vérification que l'image existe bien
-if old_frame is None:
-    print(f"ERREUR : impossible de lire {name}")
-    print("Vérifie que tu lances depuis Projet_Vision_OpenCV/")
+# INITIALISATION
+name = fformat.format(chemin, imin) 
+image = cv2.imread(name) #on lit la premiére image pour comparé
+
+# Vérification que l'image existe
+if image is None:
+    print(f"Probléme de lecture (flowOptiqueEparseVideo){name}")
     exit()
 
-old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
-p0       = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
-mask     = numpy.zeros_like(old_frame)
+#convertire "image" en niveau de gris
+image_precedente = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# ============================================================
-# BOUCLE PRINCIPALE
-# ============================================================
+
+p0       = cv2.goodFeaturesToTrack(image_precedente, mask=None, **feature_params)
+mask     = numpy.zeros_like(image)
+
+
 current = imin + 1
 
-while True:
+while (1):
     name  = fformat.format(chemin, current)
     frame = cv2.imread(name)
 
@@ -67,8 +61,8 @@ while True:
 
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Calcul flôt éparse (Lucas-Kanade)
-    p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+    # Calcul Lucas-Kanade
+    p1, st, err = cv2.calcOpticalFlowPyrLK(image_precedente, frame_gray, p0, None, **lk_params)
 
     if p1 is not None:
         good_new = p1[st == 1]
@@ -83,16 +77,17 @@ while True:
         img = cv2.add(frame, mask)
         cv2.imshow('frame', img)
 
-        old_gray = frame_gray.copy()
+        image_precedente = frame_gray.copy()
         p0       = good_new.reshape(-1, 1, 2)
 
+    #lecture du clavier 100s pour sortir de la fenetre
     k = cv2.waitKey(100) & 0xff
-    if k == 27:
+    if k == 27:#27 represente la touche "echap" 
         break
 
     if current == imax:
         current = imin + 1
-        mask    = numpy.zeros_like(old_frame)
+        mask    = numpy.zeros_like(image)
     else:
         current += 1
 
