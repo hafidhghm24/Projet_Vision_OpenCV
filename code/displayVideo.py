@@ -1,7 +1,10 @@
 import cv2      # import des fonctions OpenCV
 import numpy    # import des fonctions de calcul scientifique
 
-fichier = '../VIRAT/VIRAT_S_000203_09_001789_001842.mp4'
+#emplacement du fichier video
+fichier = '../VIRAT/VIRAT_S_000203_09_001789_001842.mp4' 
+
+#ouvrire la video
 cap = cv2.VideoCapture(fichier)
 
 while (1):
