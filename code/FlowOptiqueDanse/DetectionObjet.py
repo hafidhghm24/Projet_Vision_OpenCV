@@ -74,6 +74,13 @@ while (1):
             # Dessiner le rectangle 
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
+            # Fleche de direction
+            centre_x = x + w // 2
+            centre_y = y + h // 2
+            dx = int(flow[centre_y, centre_x, 0] * 5)
+            dy = int(flow[centre_y, centre_x, 1] * 5)
+            cv2.arrowedLine(frame, (centre_x, centre_y), (centre_x + dx, centre_y + dy), (0, 255, 255), 2, tipLength=0.4)
+
     # Afficher les deux fenêtres
     cv2.imshow('frame',  frame)    # image originale + rectangles verts
     cv2.imshow('masque', masque)   # masque binaire
