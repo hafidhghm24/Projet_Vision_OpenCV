@@ -51,7 +51,7 @@ while (1):
     #on repasse en couleur BGR pour visualisation
     imageBGR = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
-    cv2.imshow('frame',  frame)   # affichage de l'image originale
+    cv2.imshow('frame', frame)   # affichage de l'image originale
     cv2.imshow('frame2', imageBGR)     # affichage du flôt dense coloré
 
     image_precedente = image_suivante
